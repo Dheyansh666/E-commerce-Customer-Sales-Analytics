@@ -1,0 +1,105 @@
+table RFM
+	lineageTag: 2ce01690-80bc-55d9-b38e-a26bafbd5dcd
+
+	measure 'RFM Customers' = COUNTROWS(RFM)
+		formatString: #,##0
+		lineageTag: 88c9dd19-bd49-52b9-9795-e33ab3f14c95
+
+	measure 'RFM Revenue' = SUM(RFM[monetary])
+		formatString: "R$ "#,##0
+		lineageTag: 79a799b0-6055-5749-ae62-5785619fe38f
+
+	measure '% of Revenue' = DIVIDE([RFM Revenue], CALCULATE([RFM Revenue], ALL(RFM)))
+		formatString: 0.0%
+		lineageTag: db885698-573e-58f1-9025-237f399a8b0a
+
+	measure '% of Customers' = DIVIDE([RFM Customers], CALCULATE([RFM Customers], ALL(RFM)))
+		formatString: 0.0%
+		lineageTag: 51e91457-ea69-5b4b-801c-c0cad31388f6
+
+	measure 'Repeat Customer %' = DIVIDE(CALCULATE(COUNTROWS(RFM), RFM[frequency] > 1), COUNTROWS(RFM))
+		formatString: 0.0%
+		lineageTag: 7a6341c4-ed49-58b0-aee0-1fd49fd0f35b
+
+	column customer_unique_id
+		dataType: string
+		lineageTag: 83d78bab-5d40-5888-aa9b-e17157540a1e
+		summarizeBy: none
+		sourceColumn: customer_unique_id
+
+		annotation SummarizationSetBy = User
+
+	column recency
+		dataType: int64
+		formatString: 0
+		lineageTag: 393e7ad4-f4ff-5374-a938-95070e963b7f
+		summarizeBy: none
+		sourceColumn: recency
+
+		annotation SummarizationSetBy = User
+
+	column frequency
+		dataType: int64
+		formatString: 0
+		lineageTag: f49f4ca9-3758-5c63-98e9-5fd8588d803b
+		summarizeBy: none
+		sourceColumn: frequency
+
+		annotation SummarizationSetBy = User
+
+	column monetary
+		dataType: double
+		formatString: #,##0.00
+		lineageTag: 63198004-ffd8-5376-b147-e62ce2ccbe87
+		summarizeBy: none
+		sourceColumn: monetary
+
+		annotation SummarizationSetBy = User
+
+	column R
+		dataType: int64
+		formatString: 0
+		lineageTag: ba9ce48f-9d8c-518b-b6ae-e9e26120e57b
+		summarizeBy: none
+		sourceColumn: R
+
+		annotation SummarizationSetBy = User
+
+	column M
+		dataType: int64
+		formatString: 0
+		lineageTag: fec58537-1bb3-5751-bb0d-0ff14cb39dc2
+		summarizeBy: none
+		sourceColumn: M
+
+		annotation SummarizationSetBy = User
+
+	column F
+		dataType: int64
+		formatString: 0
+		lineageTag: d692c63b-f494-531a-bfbf-2dd0635c8bbd
+		summarizeBy: none
+		sourceColumn: F
+
+		annotation SummarizationSetBy = User
+
+	column segment
+		dataType: string
+		lineageTag: 6e7bb08a-87b0-5e12-8945-7c4af7a4f1c8
+		summarizeBy: none
+		sourceColumn: segment
+
+		annotation SummarizationSetBy = User
+
+	partition RFM = m
+		mode: import
+		source =
+				let
+				    Source = Csv.Document(File.Contents(DataFolder & "rfm_segments.csv"), [Delimiter=",", Encoding=65001, QuoteStyle=QuoteStyle.Csv]),
+				    Promoted = Table.PromoteHeaders(Source, [PromoteAllScalars=true]),
+				    Selected = Table.SelectColumns(Promoted, {"customer_unique_id", "recency", "frequency", "monetary", "R", "M", "F", "segment"}),
+				    Typed = Table.TransformColumnTypes(Selected, {{"customer_unique_id", type text}, {"recency", Int64.Type}, {"frequency", Int64.Type}, {"monetary", type number}, {"R", Int64.Type}, {"M", Int64.Type}, {"F", Int64.Type}, {"segment", type text}}, "en-US")
+				in
+				    Typed
+
+	annotation PBI_ResultType = Table

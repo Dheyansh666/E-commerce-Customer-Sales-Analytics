@@ -1,0 +1,5 @@
+expression DataFolder = "C:\Users\DELL\Desktop\RESUME_PROJECTS_BUILDING\ecommerce-customer-sales-analytics\data\" meta [IsParameterQuery=true, Type="Text", IsParameterQueryRequired=true]
+	lineageTag: dbf493bf-529d-5355-beaa-2ca8664c268e
+
+	annotation PBI_ResultType = Text
+

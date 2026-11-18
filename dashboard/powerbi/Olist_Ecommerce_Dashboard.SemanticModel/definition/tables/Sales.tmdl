@@ -1,0 +1,165 @@
+table Sales
+	lineageTag: f17bb554-9e64-5ff5-9a22-c3a0c0f992ea
+
+	measure Revenue = SUM(Sales[price])
+		formatString: "R$ "#,##0
+		lineageTag: 5b0ef173-dbb6-5d45-865e-70fb289fddf0
+
+	measure Orders = DISTINCTCOUNT(Sales[order_id])
+		formatString: #,##0
+		lineageTag: a3921e79-50f3-5739-8372-0015844e3495
+
+	measure Customers = DISTINCTCOUNT(Sales[customer_unique_id])
+		formatString: #,##0
+		lineageTag: d78b2c64-00fe-5746-9a02-ff1edb693762
+
+	measure 'Avg Order Value' = DIVIDE([Revenue], [Orders])
+		formatString: "R$ "#,##0.00
+		lineageTag: 512c3223-86e0-5662-be7b-d4b059314c9b
+
+	measure Freight = SUM(Sales[freight_value])
+		formatString: "R$ "#,##0
+		lineageTag: 5b7d972f-c016-55a5-b416-9d5e5f78674f
+
+	measure 'Late %' = DIVIDE(CALCULATE(DISTINCTCOUNT(Sales[order_id]), Sales[is_late] = 1), [Orders])
+		formatString: 0.0%
+		lineageTag: 1102c59e-65a9-5cc9-b1e3-bdbfc5666ed6
+
+	measure 'Avg Delivery Days' = AVERAGEX(VALUES(Sales[order_id]), CALCULATE(MAX(Sales[delivery_days])))
+		formatString: 0.0
+		lineageTag: 989d06cf-dbcf-5248-adb8-8e6d2db85ac2
+
+	column order_id
+		dataType: string
+		lineageTag: 10be34ca-d039-5a67-b6f1-0baefa499ff3
+		summarizeBy: none
+		sourceColumn: order_id
+
+		annotation SummarizationSetBy = User
+
+	column customer_unique_id
+		dataType: string
+		lineageTag: 8644b187-c5dd-5374-9ba7-9572d6d6d584
+		summarizeBy: none
+		sourceColumn: customer_unique_id
+
+		annotation SummarizationSetBy = User
+
+	column customer_state
+		dataType: string
+		lineageTag: 079c7cf1-ca70-5794-9d7d-f0a242cc53d6
+		summarizeBy: none
+		sourceColumn: customer_state
+
+		annotation SummarizationSetBy = User
+
+	column purchase_time
+		dataType: dateTime
+		formatString: General Date
+		lineageTag: 485acfcd-f52e-5ecc-a3b6-00f006b1095e
+		summarizeBy: none
+		sourceColumn: purchase_time
+
+		annotation SummarizationSetBy = User
+
+	column month
+		dataType: string
+		lineageTag: 18bb6eb8-35fe-5b87-ac8f-3b1a4f350b1d
+		summarizeBy: none
+		sourceColumn: month
+
+		annotation SummarizationSetBy = User
+
+	column product_id
+		dataType: string
+		lineageTag: f6d12333-1822-5ee8-a534-d4196863da53
+		summarizeBy: none
+		sourceColumn: product_id
+
+		annotation SummarizationSetBy = User
+
+	column seller_id
+		dataType: string
+		lineageTag: 6e15d676-3dd5-5811-a948-2b3d2618e58e
+		summarizeBy: none
+		sourceColumn: seller_id
+
+		annotation SummarizationSetBy = User
+
+	column price
+		dataType: double
+		formatString: #,##0.00
+		lineageTag: 55493d9c-2644-5b3c-83d5-e8bd826a960d
+		summarizeBy: none
+		sourceColumn: price
+
+		annotation SummarizationSetBy = User
+
+	column freight_value
+		dataType: double
+		formatString: #,##0.00
+		lineageTag: 05ce0528-a7d4-5900-8835-14e48caf613e
+		summarizeBy: none
+		sourceColumn: freight_value
+
+		annotation SummarizationSetBy = User
+
+	column category
+		dataType: string
+		lineageTag: 6d010036-85fb-5823-ac0b-b5f7eb1743dc
+		summarizeBy: none
+		sourceColumn: category
+
+		annotation SummarizationSetBy = User
+
+	column delivery_days
+		dataType: int64
+		formatString: 0
+		lineageTag: 954bcd96-16a7-5bb0-9fb9-9b3d29639375
+		summarizeBy: none
+		sourceColumn: delivery_days
+
+		annotation SummarizationSetBy = User
+
+	column is_late
+		dataType: int64
+		formatString: 0
+		lineageTag: b43b341b-7e22-5b8d-b15c-bcde09d92ada
+		summarizeBy: none
+		sourceColumn: is_late
+
+		annotation SummarizationSetBy = User
+
+	column 'Top 10 Category'
+		dataType: string
+		lineageTag: bb3dd735-149d-5316-9e9d-557a8f17f036
+		summarizeBy: none
+		sourceColumn: Top 10 Category
+
+		annotation SummarizationSetBy = User
+
+	column 'Top 10 State'
+		dataType: string
+		lineageTag: f889ed82-e2ee-57cd-9303-361d88da27e7
+		summarizeBy: none
+		sourceColumn: Top 10 State
+
+		annotation SummarizationSetBy = User
+
+	partition Sales = m
+		mode: import
+		source =
+				let
+				    Source = Csv.Document(File.Contents(DataFolder & "sales_clean.csv"), [Delimiter=",", Encoding=65001, QuoteStyle=QuoteStyle.Csv]),
+				    Promoted = Table.PromoteHeaders(Source, [PromoteAllScalars=true]),
+				    Selected = Table.SelectColumns(Promoted, {"order_id", "customer_unique_id", "customer_state", "purchase_time", "month", "product_id", "seller_id", "price", "freight_value", "category", "delivery_days", "is_late"}),
+				    Typed = Table.TransformColumnTypes(Selected, {{"order_id", type text}, {"customer_unique_id", type text}, {"customer_state", type text}, {"purchase_time", type datetime}, {"month", type text}, {"product_id", type text}, {"seller_id", type text}, {"price", type number}, {"freight_value", type number}, {"category", type text}, {"delivery_days", Int64.Type}, {"is_late", Int64.Type}}, "en-US"),
+				    TopCats = List.Buffer(List.FirstN(Table.Sort(Table.Group(Typed, {"category"}, {{"rev", each List.Sum([price]), type number}}), {{"rev", Order.Descending}})[category], 10)),
+				    TopStates = List.Buffer(List.FirstN(Table.Sort(Table.Group(Typed, {"customer_state"}, {{"rev", each List.Sum([price]), type number}}), {{"rev", Order.Descending}})[customer_state], 10)),
+				    Base = Typed,
+				    Added0 = Table.AddColumn(Base, "Top 10 Category", each if List.Contains(TopCats, [category]) then "Yes" else "No", type text),
+				    Added1 = Table.AddColumn(Added0, "Top 10 State", each if List.Contains(TopStates, [customer_state]) then "Yes" else "No", type text)
+				in
+				    Added1
+
+	annotation PBI_ResultType = Table

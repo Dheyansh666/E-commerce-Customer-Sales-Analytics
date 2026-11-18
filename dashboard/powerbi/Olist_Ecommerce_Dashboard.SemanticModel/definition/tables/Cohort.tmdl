@@ -1,0 +1,45 @@
+table Cohort
+	lineageTag: ee58583d-ae42-5c97-95b8-46b24f7dedd5
+
+	measure 'Retention %' = AVERAGE(Cohort[retention_pct])
+		formatString: 0.00"%"
+		lineageTag: 1ebacc2f-1fda-5011-bad7-1d6933dc11d0
+
+	column cohort
+		dataType: string
+		lineageTag: 810738bc-c809-5086-a614-51ae94e63342
+		summarizeBy: none
+		sourceColumn: cohort
+
+		annotation SummarizationSetBy = User
+
+	column months_since
+		dataType: int64
+		formatString: 0
+		lineageTag: cff2efb6-f5f9-5e13-8c58-284ab4dfbd73
+		summarizeBy: none
+		sourceColumn: months_since
+
+		annotation SummarizationSetBy = User
+
+	column retention_pct
+		dataType: double
+		formatString: 0.00
+		lineageTag: 53dcd9e0-277a-56de-8b07-d335d810acea
+		summarizeBy: none
+		sourceColumn: retention_pct
+
+		annotation SummarizationSetBy = User
+
+	partition Cohort = m
+		mode: import
+		source =
+				let
+				    Source = Csv.Document(File.Contents(DataFolder & "cohort_retention.csv"), [Delimiter=",", Encoding=65001, QuoteStyle=QuoteStyle.Csv]),
+				    Promoted = Table.PromoteHeaders(Source, [PromoteAllScalars=true]),
+				    Selected = Table.SelectColumns(Promoted, {"cohort", "months_since", "retention_pct"}),
+				    Typed = Table.TransformColumnTypes(Selected, {{"cohort", type text}, {"months_since", Int64.Type}, {"retention_pct", type number}}, "en-US")
+				in
+				    Typed
+
+	annotation PBI_ResultType = Table

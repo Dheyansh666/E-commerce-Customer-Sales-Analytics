@@ -1,0 +1,3 @@
+relationship 6cfcc43b-d438-5eae-9dca-e1e145efa0cc
+	fromColumn: Sales.customer_unique_id
+	toColumn: RFM.customer_unique_id

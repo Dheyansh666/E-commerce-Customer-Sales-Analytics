@@ -1,0 +1,69 @@
+table Reviews
+	lineageTag: c8d5f3cf-19ba-5fcc-8c71-a93119f3bca4
+
+	measure 'Avg Review' = AVERAGE(Reviews[review_score])
+		formatString: 0.00
+		lineageTag: fe89a004-816d-5f56-be3f-13dc3e306151
+
+	measure 'Reviewed Orders' = COUNTROWS(Reviews)
+		formatString: #,##0
+		lineageTag: eafbf36c-d36d-5355-8ba7-8c528efa83b7
+
+	measure 'Avg Days to Deliver' = AVERAGE(Reviews[delivery_days])
+		formatString: 0.0
+		lineageTag: ed9ceba9-5d4a-5976-8a3b-b80e4e0771a5
+
+	column order_id
+		dataType: string
+		lineageTag: 51af2654-7bfe-5b5c-b0a2-9b865a386fa1
+		summarizeBy: none
+		sourceColumn: order_id
+
+		annotation SummarizationSetBy = User
+
+	column customer_state
+		dataType: string
+		lineageTag: ab563f46-1cdc-5e4b-abc2-f1d694126f48
+		summarizeBy: none
+		sourceColumn: customer_state
+
+		annotation SummarizationSetBy = User
+
+	column delivery_days
+		dataType: int64
+		formatString: 0
+		lineageTag: 8c275d85-7c03-5292-8739-988003407a1b
+		summarizeBy: none
+		sourceColumn: delivery_days
+
+		annotation SummarizationSetBy = User
+
+	column delivery_status
+		dataType: string
+		lineageTag: 483aa297-dc03-5cc5-a5d5-b47cf961fe55
+		summarizeBy: none
+		sourceColumn: delivery_status
+
+		annotation SummarizationSetBy = User
+
+	column review_score
+		dataType: int64
+		formatString: 0
+		lineageTag: 54ac8e44-96b1-5a20-9d66-cffc0ec0d28f
+		summarizeBy: none
+		sourceColumn: review_score
+
+		annotation SummarizationSetBy = User
+
+	partition Reviews = m
+		mode: import
+		source =
+				let
+				    Source = Csv.Document(File.Contents(DataFolder & "delivery_reviews.csv"), [Delimiter=",", Encoding=65001, QuoteStyle=QuoteStyle.Csv]),
+				    Promoted = Table.PromoteHeaders(Source, [PromoteAllScalars=true]),
+				    Selected = Table.SelectColumns(Promoted, {"order_id", "customer_state", "delivery_days", "delivery_status", "review_score"}),
+				    Typed = Table.TransformColumnTypes(Selected, {{"order_id", type text}, {"customer_state", type text}, {"delivery_days", Int64.Type}, {"delivery_status", type text}, {"review_score", Int64.Type}}, "en-US")
+				in
+				    Typed
+
+	annotation PBI_ResultType = Table
